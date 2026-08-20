@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#1f4f7a">
+  <link rel="manifest" href="./manifest.webmanifest?v=16.0">
+  <link rel="stylesheet" href="./styles.css?v=16.0">
+  <title>My Model Kit Collection</title>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">MY COLLECTION</div>
+      <div class="titleRow">
+        <h1>Model Kit Portfolio</h1>
+        <span id="appVersionBadge" class="versionBadge">v16.0</span>
+      </div>
+    </div>
+    <button id="addBtn" class="primary">+ Add</button>
+  </header>
+
+  <main>
+    <section id="homeView" class="appView active">
+    <section id="collectionHero" class="collectionHero" aria-label="Collection overview">
+      <div class="collectionHeroOverlay"></div>
+      <div class="collectionHeroContent">
+        <div>
+          <div id="heroKitCount" class="heroCount">0</div>
+          <div class="heroLabel">Model Kits</div>
+        </div>
+        <div id="heroGradeBreakdown" class="gradeBreakdown"></div>
+      </div>
+    </section>
+
+    <section id="portfolioBanner" class="portfolioBanner" aria-label="Portfolio value">
+      <div class="portfolioTop">
+        <div>
+          <div class="portfolioLabel">Portfolio Value</div>
+          <div id="portfolioValue" class="portfolioValue">S$0.00</div>
+          <div id="portfolioGain" class="portfolioGain neutral">Comparable gain unavailable</div>
+        </div>
+        <div class="portfolioSpark" aria-hidden="true">
+          <svg viewBox="0 0 180 70">
+            <path class="sparkFill" d="M0,64 C20,58 32,61 47,50 C61,40 75,50 89,39 C104,28 119,38 132,27 C147,15 160,18 180,5 L180,70 L0,70 Z"></path>
+            <path class="sparkLine" d="M0,64 C20,58 32,61 47,50 C61,40 75,50 89,39 C104,28 119,38 132,27 C147,15 160,18 180,5"></path>
+            <circle class="sparkDot" cx="180" cy="5" r="4"></circle>
+          </svg>
+        </div>
+      </div>
+      <div class="portfolioStats">
+        <div class="portfolioStat"><div class="portfolioStatLabel">Total Spent</div><div id="portfolioSpent" class="portfolioStatValue">S$0.00</div></div>
+        <div class="portfolioStat"><div class="portfolioStatLabel">Avg. Value</div><div id="portfolioAvg" class="portfolioStatValue">S$0.00</div></div>
+        <div class="portfolioStat"><div class="portfolioStatLabel">Valued Kits</div><div id="portfolioValued" class="portfolioStatValue">0</div></div>
+        <div class="portfolioStat"><div class="portfolioStatLabel">Best ROI</div><div id="portfolioBestRoi" class="portfolioStatValue">—</div></div>
+      </div>
+    </section>
+
+    <section class="controls">
+      <input id="search" type="search" placeholder="Search kits, series, grade…">
+      <select id="franchiseFilter">
+        <option value="">All franchises</option>
+        <option>Gundam</option>
+        <option>Sakura Wars</option>
+        <option>ZOIDS</option>
+      </select>
+      <select id="sort">
+        <option value="name">Sort: Name</option>
+        <option value="value">Sort: Market value</option>
+        <option value="rarity">Sort: Rarity</option>
+        <option value="roi">Sort: ROI</option>
+      </select>
+    </section>
+
+        <section class="sectionHead">
+      <div>
+        <h2>Collection</h2>
+        <div id="count" class="muted"></div>
+      </div>
+      <button id="backupBtn" class="ghost">Backup</button>
+    </section>
+
+    <section id="list" class="list"></section>
+      </section>
+
+    <section id="paintsView" class="appView">
+      <div class="sectionHead">
+        <div>
+          <div class="eyebrow">PAINTS</div>
+          <h2>Paint Inventory</h2>
+          <div id="paintSummary" class="muted">0 paints tracked</div>
+        </div>
+        <button id="addPaintBtn" class="primary">+ Add paint</button>
+      </div>
+
+      <div class="controls paintControls">
+        <input id="paintSearch" type="search" placeholder="Search brand, code, paint…">
+        <select id="paintStockFilter">
+          <option value="">All stock</option>
+          <option>In stock</option>
+          <option>Low</option>
+          <option>Empty</option>
+          <option>Wishlist</option>
+        </select>
+      </div>
+
+      <div id="paintGallery" class="paintGallery"></div>
+    </section>
+  </main>
+
+  <nav class="bottomNav" aria-label="App sections">
+    <button id="homeTab" class="navTab active" type="button">
+      <span class="navIcon">⌂</span><span>Home</span>
+    </button>
+    <button id="paintsTab" class="navTab" type="button">
+      <span class="navIcon">◉</span><span>Paints</span>
+    </button>
+  </nav>
+
+  <dialog id="editor">
+    <form method="dialog" id="editorForm">
+      <div class="editorHead">
+        <div>
+          <div class="eyebrow">MODEL KIT</div>
+          <h2 id="editorTitle">Add kit</h2>
+        </div>
+        <button value="cancel" class="iconBtn" aria-label="Close">×</button>
+      </div>
+
+      <input type="hidden" id="kitId">
+
+      <section id="photoSection" class="photoSection">
+        <div class="sectionHead compact">
+          <div>
+            <h3>Photos</h3>
+            <div class="muted">Stored only on this device</div>
+          </div>
+          <label class="primary fileButton">
+            + Add photos
+            <input id="photoInput" type="file" accept="image/*" multiple>
+          </label>
+        </div>
+        <div id="photoGrid" class="photoGrid"></div>
+      </section>
+
+      <label>Name<input id="name" required></label>
+
+      <div class="grid2">
+        <label>Franchise<input id="franchise"></label>
+        <label>Grade<input id="grade"></label>
+      </div>
+
+      <div class="grid2">
+        <label>Scale<input id="scale"></label>
+        <label>Series<input id="series"></label>
+      </div>
+
+      <div class="grid2">
+        <label>Paid (SGD)<input id="paid" type="number" step="0.01"></label>
+        <label>Paid (JPY)<input id="paidJpy" type="number" step="1"></label>
+      </div>
+
+      <div class="grid2">
+        <label>Market value (SGD)<input id="value" type="number" step="0.01"></label>
+        <div></div>
+      </div>
+
+      <div class="grid2">
+        <label>Rarity /10<input id="rarity" type="number" step="0.5" min="0" max="10"></label>
+        <label>Status
+          <select id="status">
+            <option>Hold</option>
+            <option>Watch</option>
+            <option>Consider selling</option>
+            <option>Sell</option>
+          </select>
+        </label>
+      </div>
+
+      <section class="kitPaintSection">
+        <div class="sectionHead compact">
+          <div>
+            <h3>Required paints</h3>
+            <div id="kitPaintSummary" class="muted">No paints assigned</div>
+          </div>
+          <button id="selectKitPaintsBtn" type="button" class="ghost">Select paints</button>
+        </div>
+        <div id="selectedKitPaints" class="selectedKitPaints"></div>
+      </section>
+
+      <label>Notes<textarea id="notes" rows="4"></textarea></label>
+
+      <div class="dialogActions">
+        <button type="button" id="deleteBtn" class="danger">Delete kit</button>
+        <div class="spacer"></div>
+        <button value="cancel" class="ghost">Cancel</button>
+        <button type="button" id="saveBtn" class="primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="kitPaintDialog">
+    <div class="editorHead">
+      <div>
+        <div class="eyebrow">MODEL KIT</div>
+        <h2>Select required paints</h2>
+      </div>
+      <button id="closeKitPaintDialogBtn" type="button" class="iconBtn" aria-label="Close">×</button>
+    </div>
+    <div class="muted" style="margin-top:4px">Select the paints you plan to use for this kit.</div>
+    <div id="kitPaintPicker" class="kitPaintPicker" style="margin-top:12px"></div>
+    <div class="dialogActions">
+      <div class="spacer"></div>
+      <button id="cancelKitPaintsBtn" type="button" class="ghost">Cancel</button>
+      <button id="saveKitPaintsBtn" type="button" class="primary">Done</button>
+    </div>
+  </dialog>
+
+  <dialog id="paintDialog">
+    <div class="editorHead">
+      <div>
+        <div class="eyebrow">PAINTS</div>
+        <h2>Paint Inventory</h2>
+      </div>
+      <button id="closePaintBtn" type="button" class="iconBtn" aria-label="Close">×</button>
+    </div>
+
+    <section class="paintPhotoSection">
+      <div class="paintPhotoPreviewWrap">
+        <img id="paintPhotoPreview" class="paintPhotoPreview" alt="">
+        <div id="paintPhotoPlaceholder" class="paintPhotoPlaceholder">🎨</div>
+      </div>
+      <label class="primary fileButton">
+        Add / replace image
+        <input id="paintPhotoInput" type="file" accept="image/*">
+      </label>
+      <button id="removePaintPhotoBtn" type="button" class="ghost">Remove image</button>
+    </section>
+
+    <section class="paintEditor">
+      <h3 id="paintEditorTitle">Add paint</h3>
+      <input type="hidden" id="paintId">
+      <div class="grid2">
+        <label>Brand<input id="paintBrand" placeholder="Mr. Color"></label>
+        <label>Code<input id="paintCode" placeholder="C1"></label>
+      </div>
+      <label>Paint name<input id="paintName" placeholder="White"></label>
+      <div class="grid2">
+        <label>Purchase price (SGD)<input id="paintPaid" type="number" step="0.01"></label>
+        <label>Current price (SGD)<input id="paintValue" type="number" step="0.01"></label>
+      </div>
+      <div class="grid2">
+        <label>Purchase price (JPY)<input id="paintPaidJpy" type="number" step="1"></label>
+        <label>Type
+          <select id="paintType">
+            <option value="">Not specified</option>
+            <option>Lacquer</option>
+            <option>Acrylic</option>
+            <option>Enamel</option>
+            <option>Primer</option>
+            <option>Surfacer</option>
+            <option>Clear</option>
+            <option>Metallic</option>
+            <option>Other</option>
+          </select>
+        </label>
+        <label>Stock
+          <select id="paintStock">
+            <option>In stock</option>
+            <option>Low</option>
+            <option>Empty</option>
+            <option>Wishlist</option>
+          </select>
+        </label>
+      </div>
+      <label>Notes<input id="paintNotes" placeholder="Optional"></label>
+      <div class="dialogActions">
+        <button id="paintDeleteBtn" type="button" class="danger">Delete</button>
+        <div class="spacer"></div>
+        <button id="paintClearBtn" type="button" class="ghost">Clear</button>
+        <button id="paintSaveBtn" type="button" class="primary">Save paint</button>
+      </div>
+    </section>
+  </dialog>
+
+  <dialog id="backupDialog">
+    <h2>Backup & restore</h2>
+    <p class="muted">
+      Backups include your private collection records and locally stored photos.
+      Keep exported backup files private.
+    </p>
+
+    <div class="stack">
+      <button id="exportBtn" class="primary">Export full backup</button>
+      <label class="fileLabel">
+        Import backup
+        <input id="importFile" type="file" accept="application/json">
+      </label>
+      <button id="resetDataBtn" class="danger">Delete all local app data</button>
+      <button id="closeBackupBtn" class="ghost">Close</button>
+    </div>
+
+    <div id="backupStatus" class="muted status" aria-live="polite"></div>
+  </dialog>
+
+  <script src="./app.js?v=16.0"></script>
+</body>
+</html>
