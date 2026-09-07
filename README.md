@@ -159,3 +159,7 @@ Changes:
 ### Important migration note
 Because this build uses a new IndexedDB name for isolation, your existing locally stored collection from the previous app will not automatically appear.
 Export a backup from the old Collection app first, then import it into v16 once deployed.
+
+
+## v17 — Automatic market intelligence
+Adds Market tab, stale-data auto refresh, per-kit refresh, market metadata, confidence/source counts, and Supabase Edge Function backend. Private collection data remains local.

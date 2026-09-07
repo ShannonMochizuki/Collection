@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#1f4f7a">
-  <link rel="manifest" href="./manifest.webmanifest?v=16.0">
-  <link rel="stylesheet" href="./styles.css?v=16.0">
+  <link rel="manifest" href="./manifest.webmanifest?v=17.0">
+  <link rel="stylesheet" href="./styles.css?v=17.0">
   <title>My Model Kit Collection</title>
 </head>
 <body>
@@ -14,7 +14,7 @@
       <div class="eyebrow">MY COLLECTION</div>
       <div class="titleRow">
         <h1>Model Kit Portfolio</h1>
-        <span id="appVersionBadge" class="versionBadge">v16.0</span>
+        <span id="appVersionBadge" class="versionBadge">v17.0</span>
       </div>
     </div>
     <button id="addBtn" class="primary">+ Add</button>
@@ -106,6 +106,40 @@
 
       <div id="paintGallery" class="paintGallery"></div>
     </section>
+      <section id="marketView" class="appView">
+      <div class="sectionHead">
+        <div>
+          <div class="eyebrow">MARKET</div>
+          <h2>Market Intelligence</h2>
+          <div id="marketStatus" class="muted">Automatic market refresh is not configured yet.</div>
+        </div>
+        <button id="refreshAllMarketBtn" class="primary" type="button">Refresh all</button>
+      </div>
+
+      <section class="marketSettings cardish">
+        <h3>Connection</h3>
+        <div class="muted">Your collection stays on this phone. Only kit identity and public model metadata are sent for valuation.</div>
+        <label>Supabase project URL<input id="supabaseUrl" placeholder="https://xxxx.supabase.co"></label>
+        <label>Supabase publishable key<input id="supabaseKey" placeholder="sb_publishable_…"></label>
+        <div class="dialogActions">
+          <button id="saveMarketSettingsBtn" type="button" class="primary">Save connection</button>
+          <button id="testMarketConnectionBtn" type="button" class="ghost">Test</button>
+        </div>
+      </section>
+
+      <section class="marketSettings cardish">
+        <h3>Automatic refresh</h3>
+        <label>Refresh interval
+          <select id="marketRefreshHours">
+            <option value="12">12 hours</option>
+            <option value="24" selected>24 hours</option>
+            <option value="72">3 days</option>
+            <option value="168">7 days</option>
+          </select>
+        </label>
+      </section>
+      <div id="marketKitList" class="marketKitList"></div>
+    </section>
   </main>
 
   <nav class="bottomNav" aria-label="App sections">
@@ -114,6 +148,9 @@
     </button>
     <button id="paintsTab" class="navTab" type="button">
       <span class="navIcon">◉</span><span>Paints</span>
+    </button>
+    <button id="marketTab" class="navTab" type="button">
+      <span class="navIcon">↗</span><span>Market</span>
     </button>
   </nav>
 
@@ -187,6 +224,32 @@
         </div>
         <div id="selectedKitPaints" class="selectedKitPaints"></div>
       </section>
+
+      <details id="kitMarketMeta" class="marketMeta">
+        <summary>Market metadata</summary>
+        <div class="grid2">
+          <label>Release year<input id="releaseYear" type="number" min="1979" max="2100"></label>
+          <label>MSRP (JPY)<input id="msrpJpy" type="number" step="1"></label>
+        </div>
+        <div class="grid2">
+          <label>Release type
+            <select id="releaseType">
+              <option value="">Unknown</option><option>Retail</option><option>Premium Bandai</option>
+              <option>Event / Gundam Base</option><option>Ichiban Kuji</option><option>Collaboration</option>
+              <option>Other limited</option>
+            </select>
+          </label>
+          <label>Reprint status
+            <select id="reprintStatus">
+              <option value="">Unknown</option><option>Active / frequent</option><option>Intermittent</option>
+              <option>Limited reruns</option><option>Discontinued / no recent rerun</option>
+            </select>
+          </label>
+        </div>
+        <label>JAN / barcode<input id="janBarcode" inputmode="numeric"></label>
+        <div id="kitMarketReadout" class="marketReadout"></div>
+        <button id="refreshKitMarketBtn" type="button" class="ghost">Refresh market data</button>
+      </details>
 
       <label>Notes<textarea id="notes" rows="4"></textarea></label>
 
@@ -303,6 +366,6 @@
     <div id="backupStatus" class="muted status" aria-live="polite"></div>
   </dialog>
 
-  <script src="./app.js?v=16.0"></script>
+  <script src="./app.js?v=17.0"></script>
 </body>
 </html>

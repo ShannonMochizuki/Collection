@@ -1,11 +1,18 @@
-const APP_VERSION='16.0';
-const BUILD_ID='2026-08-21-v16';
+const APP_VERSION='17.0';
+const BUILD_ID='2026-08-29-v17';
 
 const DB_NAME='collectionModelKitPortfolioDB';
 const KIT_STORE='kits';
 const PHOTO_STORE='photos';
 const PAINT_STORE='paints';
 const VERSION=3;
+
+const MARKET_SETTINGS_KEY='modelKitMarketSettings';
+let marketBusy=false;
+function loadMarketSettings(){try{return JSON.parse(localStorage.getItem(MARKET_SETTINGS_KEY)||'{}')}catch(e){return {}}}
+function saveMarketSettings(s){localStorage.setItem(MARKET_SETTINGS_KEY,JSON.stringify(s))}
+function marketSettingsReady(){const s=loadMarketSettings();return !!(s.url&&s.key)}
+function ageHours(iso){if(!iso)return Infinity;const t=Date.parse(iso);return Number.isFinite(t)?(Date.now()-t)/36e5:Infinity}
 
 let db, allKits=[], allPhotos=[], allPaints=[], activeEditorId=null, pendingKitPaintIds=[], pendingPaintPhoto=null;
 
@@ -330,7 +337,7 @@ function openEditor(k=null){
   if(title) title.textContent=k?'Edit kit':'Add kit';
   if(kitId) kitId.value=k?.id||'';
 
-  ['name','franchise','grade','scale','series','paid','paidJpy','value','rarity','status','notes']
+  ['name','franchise','grade','scale','series','paid','paidJpy','value','rarity','status','releaseYear','msrpJpy','releaseType','reprintStatus','janBarcode','notes']
     .forEach(id=>{ const el=f(id); if(el) el.value=k?.[id]??''; });
 
   if(deleteBtn) deleteBtn.style.display=k?'inline-block':'none';
@@ -608,6 +615,47 @@ async function importBackupFile(file){
   status.textContent=`Imported ${parsed.kits.length} kits, ${(parsed.paints||[]).length} paints and ${(parsed.photos||[]).length} photos.`;
 }
 
+
+function renderKitMarketReadout(){
+  const box=document.querySelector('#kitMarketReadout'); if(!box)return;
+  const kit=activeEditorId?allKits.find(k=>k.id===activeEditorId):null;
+  box.innerHTML=!kit?.marketUpdatedAt?'No automatic market data yet.':
+    `<strong>${money(kit.value)}</strong> · rarity <strong>${kit.rarity??'—'}/10</strong> · ${kit.marketConfidence||'Unknown'} confidence · updated ${new Date(kit.marketUpdatedAt).toLocaleString()}`;
+}
+function renderMarketView(){
+  const s=loadMarketSettings(),status=document.querySelector('#marketStatus'),list=document.querySelector('#marketKitList');
+  const u=document.querySelector('#supabaseUrl'),k=document.querySelector('#supabaseKey'),h=document.querySelector('#marketRefreshHours');
+  if(u&&!u.value)u.value=s.url||''; if(k&&!k.value)k.value=s.key||''; if(h)h.value=String(s.refreshHours||24);
+  if(status)status.textContent=marketSettingsReady()?'Connected · only public kit identity is sent for valuation.':'Add your Supabase URL and publishable key to enable market refresh.';
+  if(!list)return;
+  list.innerHTML=allKits.slice().sort((a,b)=>String(a.name).localeCompare(String(b.name))).map(x=>`<article class="marketRow" data-id="${x.id}">
+    <div class="marketRowTop"><div><div class="marketRowName">${esc(x.name)}</div><div class="marketRowMeta">Rarity ${x.rarity??'—'}/10 · ${esc(x.marketConfidence||'No confidence')} <span class="confidence">${x.marketListingCount??0} listings</span></div></div>
+    <div><div class="marketRowValue">${money(x.value)}</div><div class="marketRowMeta">Updated ${x.marketUpdatedAt?new Date(x.marketUpdatedAt).toLocaleDateString():'Never'}</div></div></div>
+    <div class="marketActions"><button type="button" class="ghost refreshMarketOne">Refresh</button></div></article>`).join('');
+}
+async function callMarketFunction(kit,force=false){
+  const s=loadMarketSettings(); if(!s.url||!s.key)throw new Error('Supabase connection is not configured.');
+  const r=await fetch(s.url.replace(/\/$/,'')+'/functions/v1/refresh-market',{method:'POST',headers:{'Content-Type':'application/json','apikey':s.key,'Authorization':`Bearer ${s.key}`},
+    body:JSON.stringify({force,kit:{key:kit.janBarcode||kit.name,name:kit.name,janBarcode:kit.janBarcode||null,grade:kit.grade||null,scale:kit.scale||null,releaseYear:kit.releaseYear||null,msrpJpy:kit.msrpJpy||null,releaseType:kit.releaseType||null,reprintStatus:kit.reprintStatus||null}})});
+  const data=await r.json().catch(()=>({})); if(!r.ok)throw new Error(data.error||`Market service returned ${r.status}`); return data;
+}
+async function refreshKitMarket(kit,force=false){
+  const d=await callMarketFunction(kit,force);
+  const updated={...kit,value:d.marketValueSgd??kit.value,marketLow:d.marketLowSgd??null,marketHigh:d.marketHighSgd??null,rarity:d.rarityScore??kit.rarity,
+    marketConfidence:d.confidence||'Unknown',marketListingCount:d.listingCount??0,marketSources:d.sources||[],marketUpdatedAt:d.updatedAt||new Date().toISOString()};
+  await putStore(KIT_STORE,updated); return updated;
+}
+async function refreshAllMarket(force=false){
+  if(marketBusy)return; if(!marketSettingsReady())return alert('Configure the market connection first.');
+  marketBusy=true; document.body.classList.add('marketBusy');
+  try{
+    const hours=+(loadMarketSettings().refreshHours||24),targets=allKits.filter(k=>force||ageHours(k.marketUpdatedAt)>=hours); let done=0;
+    for(const kit of targets){try{await refreshKitMarket(kit,force)}catch(err){console.warn(err)} done++; const s=document.querySelector('#marketStatus');if(s)s.textContent=`Refreshing ${done}/${targets.length}…`}
+    await refresh();renderMarketView();const s=document.querySelector('#marketStatus');if(s)s.textContent=targets.length?`Refresh complete · ${targets.length} kits checked.`:'Market data is already fresh.';
+  }finally{marketBusy=false;document.body.classList.remove('marketBusy')}
+}
+async function autoRefreshMarketIfStale(){if(!marketSettingsReady())return;const h=+(loadMarketSettings().refreshHours||24);if(allKits.some(k=>ageHours(k.marketUpdatedAt)>=h))refreshAllMarket(false)}
+
 document.querySelector('#addBtn').addEventListener('click',()=>openEditor());
 
 document.querySelector('#saveBtn').addEventListener('click',async()=>{
@@ -627,6 +675,17 @@ document.querySelector('#saveBtn').addEventListener('click',async()=>{
     value:f('value').value===''?null:+f('value').value,
     rarity:f('rarity').value===''?null:+f('rarity').value,
     status:f('status').value,
+    releaseYear:f('releaseYear')?.value===''?null:+f('releaseYear').value,
+    msrpJpy:f('msrpJpy')?.value===''?null:+f('msrpJpy').value,
+    releaseType:f('releaseType')?.value||'',
+    reprintStatus:f('reprintStatus')?.value||'',
+    janBarcode:f('janBarcode')?.value.trim()||'',
+    marketUpdatedAt:(allKits.find(x=>x.id===id)?.marketUpdatedAt)||null,
+    marketLow:(allKits.find(x=>x.id===id)?.marketLow)??null,
+    marketHigh:(allKits.find(x=>x.id===id)?.marketHigh)??null,
+    marketConfidence:(allKits.find(x=>x.id===id)?.marketConfidence)||null,
+    marketSources:(allKits.find(x=>x.id===id)?.marketSources)||[],
+    marketListingCount:(allKits.find(x=>x.id===id)?.marketListingCount)??null,
     paintIds:[...pendingKitPaintIds],
     notes:f('notes').value.trim()
   };
@@ -714,14 +773,12 @@ document.querySelector('#saveKitPaintsBtn').addEventListener('click',()=>{
 
 
 function showView(name){
-  const home=document.querySelector('#homeView'), paints=document.querySelector('#paintsView');
-  const homeTab=document.querySelector('#homeTab'), paintsTab=document.querySelector('#paintsTab');
-  const isPaints=name==='paints';
-  home.classList.toggle('active',!isPaints);
-  paints.classList.toggle('active',isPaints);
-  homeTab.classList.toggle('active',!isPaints);
-  paintsTab.classList.toggle('active',isPaints);
-  if(isPaints) renderPaintGallery();
+  const views={home:document.querySelector('#homeView'),paints:document.querySelector('#paintsView'),market:document.querySelector('#marketView')};
+  const tabs={home:document.querySelector('#homeTab'),paints:document.querySelector('#paintsTab'),market:document.querySelector('#marketTab')};
+  Object.entries(views).forEach(([key,v])=>v&&v.classList.toggle('active',key===name));
+  Object.entries(tabs).forEach(([key,t])=>t&&t.classList.toggle('active',key===name));
+  if(name==='paints')renderPaintGallery();
+  if(name==='market')renderMarketView();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -747,6 +804,31 @@ document.querySelector('#closePaintBtn').addEventListener('click',()=>document.q
 document.querySelector('#paintSaveBtn').addEventListener('click',savePaint);
 document.querySelector('#paintDeleteBtn').addEventListener('click',deletePaint);
 document.querySelector('#paintClearBtn').addEventListener('click',clearPaintEditor);
+
+
+document.querySelector('#marketTab')?.addEventListener('click',()=>showView('market'));
+document.querySelector('#saveMarketSettingsBtn')?.addEventListener('click',()=>{
+  saveMarketSettings({url:document.querySelector('#supabaseUrl').value.trim(),key:document.querySelector('#supabaseKey').value.trim(),refreshHours:+document.querySelector('#marketRefreshHours').value||24});
+  renderMarketView();
+});
+document.querySelector('#marketRefreshHours')?.addEventListener('change',()=>{
+  const s=loadMarketSettings();saveMarketSettings({...s,refreshHours:+document.querySelector('#marketRefreshHours').value||24});
+});
+document.querySelector('#testMarketConnectionBtn')?.addEventListener('click',async()=>{
+  try{if(!allKits[0])throw new Error('No kits available.');await callMarketFunction(allKits[0],false);alert('Market service connection is working.')}
+  catch(err){alert(`Connection failed: ${err.message}`)}
+});
+document.querySelector('#refreshAllMarketBtn')?.addEventListener('click',()=>refreshAllMarket(true));
+document.querySelector('#marketKitList')?.addEventListener('click',async e=>{
+  const btn=e.target.closest('.refreshMarketOne');if(!btn)return;const row=e.target.closest('.marketRow'),kit=allKits.find(k=>k.id===row?.dataset.id);if(!kit)return;
+  btn.disabled=true;btn.textContent='Refreshing…';
+  try{await refreshKitMarket(kit,true);await refresh();renderMarketView()}catch(err){alert(`Refresh failed: ${err.message}`)}
+});
+document.querySelector('#refreshKitMarketBtn')?.addEventListener('click',async()=>{
+  if(!activeEditorId)return alert('Save this kit first.');const kit=allKits.find(k=>k.id===activeEditorId);if(!kit)return;
+  try{await refreshKitMarket(kit,true);await refresh();const fresh=allKits.find(k=>k.id===activeEditorId);if(fresh){document.querySelector('#value').value=fresh.value??'';document.querySelector('#rarity').value=fresh.rarity??'';renderKitMarketReadout()}}
+  catch(err){alert(`Market refresh failed: ${err.message}`)}
+});
 
 document.querySelector('#backupBtn').addEventListener('click',()=>{
   document.querySelector('#backupStatus').textContent='';
@@ -795,9 +877,10 @@ async function updateVersionStatus(){
   db=await openDB();
   await seedIfEmpty();
   await refresh();
+  setTimeout(autoRefreshMarketIfStale,1200);
   if('serviceWorker' in navigator){
     try{
-      const reg=await navigator.serviceWorker.register('./sw.js?v=16.0',{scope:'./'});
+      const reg=await navigator.serviceWorker.register('./sw.js?v=17.0',{scope:'./'});
       await reg.update();
     }catch(e){ console.warn('Service worker update failed',e); }
   }
